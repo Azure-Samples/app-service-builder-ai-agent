@@ -37,6 +37,27 @@ const post = (message = 'Explain HTTP') => ({
   body: JSON.stringify({ message }),
 });
 
+test('static showcase is public and makes no provider calls or changes to existing routes', async (t) => {
+  const request = await fixture(t, { env: {}, fetchImpl: () => { throw new Error('must not call'); } });
+  for (const path of ['/demo', '/demo?scoutTheme=light']) {
+    const response = await request(path);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('content-type'), 'text/html; charset=utf-8');
+    assert.match(response.headers.get('content-security-policy'), /form-action 'none'/);
+    const html = await response.text();
+    assert.match(html, /not a live chat/);
+    assert.match(html, /No generated reply is shown/);
+    assert(!html.includes('<form'));
+    assert(!html.includes('fetch('));
+    assert(!html.includes(env.OPENAI_API_KEY));
+  }
+  assert.equal(await (await request('/')).text(), 'App Service Builder / agent-web\n');
+  assert.equal(await (await request('/health')).text(), 'OK\n');
+  assert.equal((await request('/demo', { method: 'POST' })).status, 404);
+  assert.equal((await request('/demo/missing')).status, 404);
+  assert.equal((await request('/demo', { headers: { Origin: 'https://evil.example' } })).status, 403);
+});
+
 test('one authenticated turn calls the real API contract with bounded, tool-free output', async (t) => {
   let calls = 0;
   const request = await fixture(t, { fetchImpl: async (url, options) => {

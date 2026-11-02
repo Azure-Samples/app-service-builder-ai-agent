@@ -12,6 +12,7 @@ Builder hosts this ordinary Node.js web application. It does **not** provision o
 - Public liveness and sample-identifier endpoints; authenticated, bounded assistant requests.
 - Explicit OpenAI or Azure OpenAI configuration with sanitized failures and response limits.
 - Local HTTP tests with mocked providers: no model account, credentials, or paid model calls required.
+- A responsive, static showcase at `/demo` with a request example and setup links. It never collects credentials, calls a model, or displays fabricated replies.
 
 ## Getting Started
 
@@ -56,6 +57,8 @@ curl --fail-with-body http://127.0.0.1:8080/health
 curl --fail-with-body http://127.0.0.1:8080/
 # App Service Builder / agent-web
 ```
+
+For the visual template showcase, open `http://127.0.0.1:8080/demo` in a browser. This is a static introduction, not a chat client or configuration-status check. It follows the device's light/dark preference; use `/demo?scoutTheme=light` for a consistent light thumbnail or `scoutTheme=dark` for dark. All styling and scripts are local, with no external assets or runtime dependencies. The existing `/` identifier and API routes are unchanged.
 
 An unauthenticated request returns `401` with `{"error":"unauthorized"}`:
 
@@ -105,6 +108,7 @@ The answer is nondeterministic, not the literal placeholder or a promised senten
 | `PUBLIC_ORIGIN` | Optional exact HTTPS origin, without trailing slash, accepted when a caller supplies `Origin`. Local origins `http://localhost:8080` and `http://127.0.0.1:8080` are also accepted. No browser CORS access is granted. |
 | `GET /health` | Public `200` with `OK`; liveness only, no provider call. |
 | `GET /` | Public `200` with `App Service Builder / agent-web`. |
+| `GET /demo` | Public static HTML showcase; no credentials, provider requests, or simulated assistant output. |
 | `POST /agent` | JSON containing only `{"message":"..."}`; nonblank string up to 2000 UTF-16 code units; body capped at 8192 bytes. |
 | Provider request | One call per accepted turn; 512 output tokens, `store:false`, `stream:false`, `tools:[]`. No retries or conversation store. |
 | Response | Completed assistant text only; up to 4000 UTF-16 code units; upstream body capped at 65,536 bytes. |

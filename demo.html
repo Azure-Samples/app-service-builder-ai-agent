@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A bounded, single-turn AI assistant API sample for App Service Builder.">
+  <title>Assistant studio | App Service Builder</title>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("scoutTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --cp-bg: #f7f4ef;
+      --cp-bg-elevated: #fcfbf8;
+      --cp-surface: #ffffff;
+      --cp-surface-soft: #f5f5f5;
+      --cp-border: #dedede;
+      --cp-border-strong: #919191;
+      --cp-text: #242424;
+      --cp-text-muted: #5c5c5c;
+      --cp-text-soft: #6f6f6f;
+      --cp-accent: #b11f4b;
+      --cp-accent-hover: #9a1a41;
+      --cp-accent-soft: rgba(177, 31, 75, 0.08);
+      --cp-accent-fg: #ffffff;
+      --cp-success: #16a34a;
+      --cp-danger: #dc2626;
+      --cp-warning: #f59e0b;
+      --cp-link: #0078d4;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+      --cp-overlay: rgba(255, 255, 255, 0.8);
+      --cp-panel: rgba(255, 255, 255, 0.86);
+      --cp-panel-strong: rgba(255, 255, 255, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.55);
+      --cp-highlight: rgba(177, 31, 75, 0.12);
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --cp-bg: #3d3b3a;
+      --cp-bg-elevated: #343231;
+      --cp-surface: #292929;
+      --cp-surface-soft: #2e2e2e;
+      --cp-border: #474747;
+      --cp-border-strong: #5f5f5f;
+      --cp-text: #dedede;
+      --cp-text-muted: #919191;
+      --cp-text-soft: #b0b0b0;
+      --cp-accent: #fd8ea1;
+      --cp-accent-hover: #fb7b91;
+      --cp-accent-soft: rgba(253, 142, 161, 0.14);
+      --cp-accent-fg: #1a1a1a;
+      --cp-success: #4ade80;
+      --cp-danger: #f87171;
+      --cp-warning: #fbbf24;
+      --cp-link: #4da6ff;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+      --cp-overlay: rgba(41, 41, 41, 0.88);
+      --cp-panel: rgba(41, 41, 41, 0.72);
+      --cp-panel-strong: rgba(41, 41, 41, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.04);
+      --cp-highlight: rgba(253, 142, 161, 0.12);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--cp-bg); color: var(--cp-text); font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif; }
+    a { color: inherit; text-underline-offset: 4px; }
+    a:focus-visible, summary:focus-visible { outline: 3px solid var(--cp-accent); outline-offset: 5px; }
+    .skip { position: absolute; top: -80px; left: 16px; padding: 12px; background: var(--cp-surface); z-index: 1; }
+    .skip:focus { top: 12px; }
+    .shell { max-width: 1360px; margin: auto; padding: 0 64px; }
+    header { min-height: 100px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--cp-border); }
+    .brand { display: flex; align-items: center; gap: 12px; font-size: 15px; font-weight: 650; letter-spacing: -.3px; }
+    .mark { width: 36px; height: 36px; display: grid; place-items: center; color: var(--cp-accent-fg); background: var(--cp-accent); border-radius: 10px; font: 20px Consolas, "Courier New", Courier, monospace; }
+    .preview { font-size: 12px; color: var(--cp-text-muted); border: 1px solid var(--cp-border-strong); border-radius: 24px; padding: 7px 12px; }
+    main { padding: 76px 0 52px; }
+    .hero { display: grid; grid-template-columns: 1fr 1.05fr; gap: 64px; align-items: center; }
+    h1 { font-size: clamp(48px, 5.2vw, 72px); font-weight: 500; line-height: 1.03; letter-spacing: -.04em; margin: 0 0 24px; }
+    h1 em { font-family: Georgia, "Times New Roman", serif; font-weight: 400; color: var(--cp-accent); }
+    .intro { font-size: 18px; line-height: 1.65; max-width: 400px; color: var(--cp-text-muted); }
+    .actions { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; margin-top: 32px; font-size: 14px; }
+    .primary { display: inline-flex; gap: 24px; align-items: center; background: var(--cp-accent); color: var(--cp-accent-fg); padding: 14px 20px; border-radius: 10px; text-decoration: none; font-weight: 650; }
+    .primary:hover { background: var(--cp-accent-hover); }
+    .note { margin-top: 24px; font-size: 12px; color: var(--cp-text-muted); line-height: 1.6; }
+    .workspace { background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 16px; overflow: hidden; }
+    .workspace-top { padding: 20px 24px; border-bottom: 1px solid var(--cp-border); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .workspace-top strong { font-size: 14px; font-weight: 600; }
+    .workspace-top span { font-size: 11px; color: var(--cp-text-muted); }
+    .workspace-body { padding: 28px; }
+    .request-label { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--cp-text-muted); letter-spacing: 1px; text-transform: uppercase; }
+    .method { color: var(--cp-accent); font-weight: 700; letter-spacing: 0; text-transform: none; font-family: Consolas, "Courier New", Courier, monospace; }
+    .prompt { font-size: 23px; line-height: 1.45; letter-spacing: -.5px; margin: 20px 0 24px; }
+    pre { margin: 0; padding: 20px; font: 13px/1.8 Consolas, "Courier New", Courier, monospace; background: var(--cp-bg-elevated); border: 1px solid var(--cp-border); border-radius: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .json-key { color: var(--cp-accent); }
+    .flow { display: flex; align-items: center; gap: 12px; padding: 24px 0; font-size: 12px; color: var(--cp-text-muted); }
+    .flow-line { height: 1px; flex: 1; background: var(--cp-border-strong); }
+    .empty { border-top: 1px solid var(--cp-border); padding-top: 24px; }
+    .empty strong { font-size: 14px; font-weight: 600; }
+    .empty p { margin-bottom: 0; font-size: 13px; line-height: 1.7; color: var(--cp-text-muted); }
+    .caption { margin-top: 16px; color: var(--cp-text-muted); font-size: 11px; }
+    .principles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; margin-top: 64px; padding-top: 28px; border-top: 1px solid var(--cp-border); }
+    .principle { display: flex; gap: 16px; }
+    h2 { font-size: 15px; font-weight: 650; margin: 0 0 8px; }
+    .principle p { font-size: 13px; line-height: 1.65; color: var(--cp-text-muted); margin: 0; }
+    details { margin-top: 40px; border-top: 1px solid var(--cp-border); padding: 20px 0; font-size: 13px; color: var(--cp-text-muted); }
+    summary { cursor: pointer; color: var(--cp-text); width: fit-content; padding: 4px 0; }
+    details p { max-width: 760px; line-height: 1.8; }
+    footer { display: flex; justify-content: space-between; gap: 20px; padding: 24px 0; border-top: 1px solid var(--cp-border); font-size: 11px; color: var(--cp-text-muted); }
+    html[data-theme="dark"] :is(.preview, .intro, .note, .workspace-top span, .request-label, .flow, .empty p, .caption, .principle p, details, footer) { color: var(--cp-text-soft); }
+    @media (max-width: 900px) {
+      .shell { padding: 0 32px; }
+      .hero { gap: 32px; }
+      h1 { font-size: 52px; }
+      .workspace-body { padding: 24px; }
+      .principles { gap: 24px; }
+    }
+    @media (max-width: 680px) {
+      .shell { padding: 0 24px; }
+      header { min-height: 80px; gap: 12px; }
+      .brand { font-size: 12px; gap: 8px; }
+      .mark { width: 30px; height: 30px; font-size: 17px; }
+      .preview { font-size: 10px; padding: 6px 8px; white-space: nowrap; }
+      main { padding-top: 40px; }
+      .hero { grid-template-columns: 1fr; gap: 36px; }
+      h1 { font-size: 56px; margin: 0 0 20px; }
+      .intro { font-size: 17px; }
+      .principles { grid-template-columns: 1fr; margin-top: 40px; gap: 24px; }
+      .workspace-top { padding: 18px 20px; }
+      .workspace-body { padding: 20px; }
+      .prompt { font-size: 21px; }
+      pre { padding: 16px; font-size: 12px; }
+      footer { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="shell">
+    <header>
+      <div class="brand"><span class="mark" aria-hidden="true">&gt;_</span> App Service Builder <span aria-hidden="true">/</span> AI assistant</div>
+      <span class="preview">Private Preview</span>
+    </header>
+    <main id="main">
+      <div class="hero">
+        <section>
+          <h1>A little context.<br>A <em>clearer</em> answer.</h1>
+          <p class="intro">One question in. One response out. A focused starting point for an AI assistant API, built with plain Node.js.</p>
+          <div class="actions">
+            <a class="primary" href="https://github.com/Azure-Samples/app-service-builder-ai-agent#quickstart">Start building <span aria-hidden="true">&nearr;</span></a>
+            <a href="https://github.com/Azure-Samples/app-service-builder-ai-agent">Explore the source</a>
+          </div>
+          <p class="note">Development &amp; testing sample.<br>Bring your own OpenAI or Azure OpenAI model.</p>
+        </section>
+        <section aria-label="Illustrative request contract">
+          <div class="workspace">
+            <div class="workspace-top"><strong>Request notebook</strong><span>API example &middot; not a live chat</span></div>
+            <div class="workspace-body">
+              <div class="request-label"><span>Your input</span><span class="method">POST /agent</span></div>
+              <p class="prompt">Explain HTTP in one sentence.</p>
+              <pre aria-label="Example JSON request">{
+  <span class="json-key">"message"</span>: "Explain HTTP in one sentence."
+}</pre>
+              <div class="flow" aria-hidden="true"><span>Authenticated request</span><span class="flow-line"></span><span>One model call</span></div>
+              <div class="empty">
+                <strong>Your model's answer belongs here.</strong>
+                <p>No generated reply is shown. Configure a provider and send an authenticated HTTP request to receive a real response.</p>
+              </div>
+            </div>
+          </div>
+          <p class="caption">Text in, text out. Nothing running in the background.</p>
+        </section>
+      </div>
+      <section class="principles" aria-label="How the sample works">
+        <div class="principle"><div><h2>Small by design</h2><p>No tools, autonomous loops or conversation history. Just a single, bounded turn.</p></div></div>
+        <div class="principle"><div><h2>Your model, explicitly</h2><p>Connect an authorized OpenAI model or Azure OpenAI deployment. Keys stay server-side.</p></div></div>
+        <div class="principle"><div><h2>Boundaries built in</h2><p>Bearer authentication, request limits and a ten-second model deadline.</p></div></div>
+      </section>
+      <details>
+        <summary>Before you connect a model</summary>
+        <p>This page is a static showcase. It does not collect credentials, send prompts or verify configuration. Real API requests require a separately configured provider and can incur model-service charges. Never include secrets or sensitive data in prompts. App Service Builder hosts the web application, not the model. This development sample is not a production identity or abuse-protection design.</p>
+        <a href="https://github.com/Azure-Samples/app-service-builder-ai-agent#demo-opt-in-real-provider-request">Read provider setup and safety notes</a>
+      </details>
+    </main>
+    <footer><span>App Service Builder / agent-web</span><span>Node.js &middot; Responses API &middot; No runtime dependencies</span></footer>
+  </div>
+</body>
+</html>
